@@ -72,6 +72,9 @@ public:
 	afx_msg void OnGeometryHorizontalFlip();
 	afx_msg void OnGeometryVerticalFlip();
 	afx_msg void OnGeometryZoomoutMeansub();
+	afx_msg void OnGeometryWarping();
+	afx_msg void OnLButtonDown(UINT nFlags, CPoint point);
+	afx_msg void OnLButtonUp(UINT nFlags, CPoint point);
 };
 
 #ifndef _DEBUG  // Project_20171169View.cpp의 디버그 버전
