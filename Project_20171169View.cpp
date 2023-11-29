@@ -13,6 +13,8 @@
 #include "Project_20171169Doc.h"
 #include "Project_20171169View.h"
 
+#include <Vfw.h>
+
 #ifdef _DEBUG
 #define new DEBUG_NEW
 #endif
@@ -57,6 +59,7 @@ BEGIN_MESSAGE_MAP(CProject20171169View, CScrollView)
 	ON_COMMAND(ID_GEOMETRY_WARPING, &CProject20171169View::OnGeometryWarping)
 	ON_WM_LBUTTONDOWN()
 	ON_WM_LBUTTONUP()
+	ON_COMMAND(ID_AVI_VIEW, &CProject20171169View::OnAviView)
 END_MESSAGE_MAP()
 
 
@@ -65,7 +68,8 @@ END_MESSAGE_MAP()
 CProject20171169View::CProject20171169View() noexcept
 {
 	// TODO: 여기에 생성 코드를 추가합니다.
-
+	bAviMode = false;
+	AviFileName = "";
 }
 
 CProject20171169View::~CProject20171169View()
@@ -89,6 +93,13 @@ void CProject20171169View::OnDraw(CDC* pDC)
 	if (!pDoc)
 		return;
 
+	if (bAviMode) {
+		//재생
+		LoadAviFile(pDC);
+
+		bAviMode = false;
+		return;
+	}
 	// TODO: 여기에 원시 데이터에 대한 그리기 코드를 추가합니다.
 	int x, y;
 
@@ -1597,4 +1608,68 @@ void CProject20171169View::OnLButtonUp(UINT nFlags, CPoint point)
 	mctrl_dest.Qy = mpos_end.y;
 
 	CScrollView::OnLButtonUp(nFlags, point);
+}
+
+
+void CProject20171169View::OnAviView()
+{
+	// TODO: 여기에 명령 처리기 코드를 추가합니다.
+	CFileDialog dlg(true, "", "", OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, "AVI파일(*.avi)|*.avi|모든파일|*.*|");
+
+	if (dlg.DoModal() == IDOK) {
+		AviFileName = dlg.GetPathName();
+		bAviMode = true;
+		Invalidate();
+	}
+
+}
+
+
+void CProject20171169View::LoadAviFile(CDC* pDC)
+{
+	// TODO: 여기에 구현 코드 추가.
+	PAVIFILE pavi;
+	AVIFILEINFO fi;
+	PAVISTREAM pstm = NULL;
+	AVISTREAMINFO si;
+	PGETFRAME pfrm = NULL;
+	LPBITMAPINFOHEADER pbmpih;
+	unsigned char* image;
+	
+	AVIFileInit();
+	AVIFileOpen(&pavi, AviFileName, OF_READ | OF_SHARE_DENY_NONE, NULL);
+	AVIFileInfo(pavi, &fi, sizeof(AVIFILEINFO));
+
+	for (int stm = 0; stm < fi.dwStreams; stm++) {
+		AVIFileGetStream(pavi, &pstm, 0, stm);
+		AVIStreamInfo(pstm, &si, sizeof(si));
+		if (si.fccType == streamtypeVIDEO) {
+			pfrm = AVIStreamGetFrameOpen(pstm, NULL);
+			for (int frame = 0; frame < si.dwLength; frame++) { 
+				pbmpih = (LPBITMAPINFOHEADER)AVIStreamGetFrame(pfrm, frame);
+				if (!pbmpih) {
+					continue;
+				}
+				image = (unsigned char*)((LPSTR)pbmpih + (WORD)pbmpih->biSize);
+
+				/*
+				for (int y = 0; y < fi.dwHeight; y++) {
+					for (int x = 0; x < fi.dwWidth; x++) {
+						pDC->SetPixel(x, fi.dwHeight-1-y, 
+								RGB(image[3 * (y * fi.dwWidth + x) + 2],
+									image[3 * (y * fi.dwWidth + x) + 1], 
+									image[3 * (y * fi.dwWidth + x) + 0]));
+						
+					}
+				}
+				*/
+				::SetDIBitsToDevice(pDC->GetSafeHdc(), 0, 0, fi.dwWidth, fi.dwHeight, 0, 0, 0, fi.dwWidth, image, (BITMAPINFO*)pbmpih, DIB_RGB_COLORS);
+				Sleep(33);
+			}
+		}
+	}
+	AVIStreamGetFrameClose(pfrm);
+	AVIStreamRelease(pstm);
+	AVIFileRelease(pavi);
+	AVIFileExit();
 }

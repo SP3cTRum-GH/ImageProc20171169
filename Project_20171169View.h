@@ -75,6 +75,10 @@ public:
 	afx_msg void OnGeometryWarping();
 	afx_msg void OnLButtonDown(UINT nFlags, CPoint point);
 	afx_msg void OnLButtonUp(UINT nFlags, CPoint point);
+	afx_msg void OnAviView();
+	bool bAviMode;
+	CString AviFileName;
+	void LoadAviFile(CDC* pDC);
 };
 
 #ifndef _DEBUG  // Project_20171169View.cpp의 디버그 버전
